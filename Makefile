@@ -55,7 +55,7 @@ install:
 	@ mkdir -p $(DESTLIBDIR)
 	@ mkdir -p $(DESTINCLUDE_DIR)
 	$(INSTALL) -d $(DESTLIBDIR)
-	$(INSTALL) -m 644 $(LIBDIR)/* $(DESTLIBDIR)
+	cp -dp $(LIBDIR)/* $(DESTLIBDIR)
 	$(INSTALL) -d $(DESTINCLUDE_DIR)
 	$(INSTALL) -m 644 $(INCLUDE_DIR)/*.h $(CORE_DIR)/*.h $(GENCODECS_DIR)/*.h \
 	               $(DESTINCLUDE_DIR)
@@ -65,7 +65,7 @@ install:
 uninstall:
 	rm -rf $(PREFIX)/include/concord
 	rm -rf $(PREFIX)/lib/libdiscord.a
-	rm -rf $(PREFIX)/lib/libdiscord.so
+	rm -f $(PREFIX)/lib/libdiscord.so $(PREFIX)/lib/libdiscord.so.*
 	rm -rf $(PREFIX)/lib/libdiscord.dylib
 	rm -f $(PKGCONFIGDIR)/concord.pc
 

@@ -61,10 +61,16 @@ WFLAGS  = -Wall -Wextra -Wshadow -Wdouble-promotion -Wconversion -Wpedantic
 CFLAGS += -std=c99 -pthread -D_XOPEN_SOURCE=600 \
           -I$(INCLUDE_DIR) -I$(CORE_DIR) -I$(GENCODECS_DIR) -I$(PREFIX)/include
 
-ARLIB = $(LIBDIR)/libdiscord.a
-SOLIB = $(LIBDIR)/libdiscord.so.$(VERSION_MAJOR).$(VERSION_MINOR)
-SOLIBNOSONAME = $(LIBDIR)/libdiscord.so
-DYLIB = $(LIBDIR)/libdiscord.dylib
+LIBNAME = libdiscord
+
+ARLIB = $(LIBDIR)/$(LIBNAME).a
+SOLIB_BASENAME = $(LIBNAME).so
+SOLIB_FILENAME = $(SOLIB_BASENAME).$(VERSION_MAJOR).$(VERSION_MINOR)
+SOLIB_SONAME = $(SOLIB_BASENAME).$(VERSION_MAJOR)
+
+SOLIB = $(LIBDIR)/$(SOLIB_FILENAME)
+SOLIBNOSONAME = $(LIBDIR)/$(SOLIB_BASENAME)
+DYLIB = $(LIBDIR)/$(LIBNAME).dylib
 
 ARFLAGS = -cqsv
 SOFLAGS = -fPIC
@@ -79,6 +85,8 @@ static: $(ARLIB)
 
 shared:
 	@ CFLAGS="$(SOFLAGS)" $(MAKE) $(SOLIB)
+	@ ln -sf $(SOLIB_FILENAME) $(LIBDIR)/$(SOLIB_SONAME)
+	@ ln -sf $(SOLIB_FILENAME) $(LIBDIR)/$(SOLIB_BASENAME)
 shared_nosoname:
 	@ CFLAGS="$(SOFLAGS)" $(MAKE) $(SOLIBNOSONAME)
 shared_osx:
@@ -87,7 +95,7 @@ shared_osx:
 $(ARLIB): deps
 	$(AR) $(ARFLAGS) $@ $(OBJS) $(GENCODECS_OBJ) $(CORE_OBJS)
 $(SOLIB): deps
-	$(CC) -shared -Wl,-soname,libdiscord.so.$(VERSION_MAJOR) $(LDFLAGS) -lcurl -o $@ $(OBJS) $(GENCODECS_OBJ) $(CORE_OBJS)
+	$(CC) -shared -Wl,-soname,$(SOLIB_SONAME) $(LDFLAGS) -lcurl -o $@ $(OBJS) $(GENCODECS_OBJ) $(CORE_OBJS)
 $(SOLIBNOSONAME): deps
 	$(CC) -shared $(LDFLAGS) -lcurl -o $@ $(OBJS) $(GENCODECS_OBJ) $(CORE_OBJS)
 $(DYLIB): deps
