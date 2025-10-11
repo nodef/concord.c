@@ -7,8 +7,8 @@ LIBDIR        = $(TOP)/lib
 GENCODECS_DIR = $(TOP)/gencodecs
 CORE_DIR      = $(TOP)/core
 
-VERSION_MAJOR = 2.3
-VERSION_MINOR = 1
+VERSION_MAJOR = 3.0
+VERSION_MINOR = 0
 
 CORE_OBJS     = $(CORE_DIR)/cog-utils.o          \
                 $(CORE_DIR)/concord-error.o      \
