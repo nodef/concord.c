@@ -55,7 +55,10 @@ install:
 	@ mkdir -p $(DESTLIBDIR)
 	@ mkdir -p $(DESTINCLUDE_DIR)
 	$(INSTALL) -d $(DESTLIBDIR)
-	cp -dp $(LIBDIR)/* $(DESTLIBDIR)
+	@ for lib in $(LIBDIR)/libdiscord.a $(LIBDIR)/libdiscord.so $(LIBDIR)/libdiscord.so.* $(LIBDIR)/libdiscord.dylib; do \
+		if [ -e "$$lib" ]; then chmod 755 "$$lib"; fi; \
+	done
+	cp -P $(LIBDIR)/* $(DESTLIBDIR)
 	$(INSTALL) -d $(DESTINCLUDE_DIR)
 	$(INSTALL) -m 644 $(INCLUDE_DIR)/*.h $(CORE_DIR)/*.h $(GENCODECS_DIR)/*.h \
 	               $(DESTINCLUDE_DIR)
