@@ -99,7 +99,7 @@ $(SOLIB): deps
 $(SOLIBNOSONAME): deps
 	$(CC) -shared $(LDFLAGS) -lcurl -o $@ $(OBJS) $(GENCODECS_OBJ) $(CORE_OBJS)
 $(DYLIB): deps
-	$(CC) -dynamiclib $(DYFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(GENCODECS_OBJ) $(CORE_OBJS)
+	$(CC) -dynamiclib $(DYFLAGS) $(LDFLAGS) -lcurl -o $@ $(OBJS) $(GENCODECS_OBJ) $(CORE_OBJS)
 
 deps:
 	@ $(MAKE) -C $(CORE_DIR)

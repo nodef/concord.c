@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include <bits/getopt_core.h>
+#include <getopt.h>
 #include <curl/curl.h>
 
 #include "websockets.h"
