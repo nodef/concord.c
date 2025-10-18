@@ -95,11 +95,11 @@ shared_osx:
 $(ARLIB): deps
 	$(AR) $(ARFLAGS) $@ $(OBJS) $(GENCODECS_OBJ) $(CORE_OBJS)
 $(SOLIB): deps
-	$(CC) -shared -Wl,-soname,$(SOLIB_SONAME) $(LDFLAGS) -lcurl -o $@ $(OBJS) $(GENCODECS_OBJ) $(CORE_OBJS)
+	$(CC) -shared -Wl,-soname,$(SOLIB_SONAME) $(LDFLAGS) -o $@ $(OBJS) $(GENCODECS_OBJ) $(CORE_OBJS) -lcurl
 $(SOLIBNOSONAME): deps
-	$(CC) -shared $(LDFLAGS) -lcurl -o $@ $(OBJS) $(GENCODECS_OBJ) $(CORE_OBJS)
+	$(CC) -shared $(LDFLAGS) -o $@ $(OBJS) $(GENCODECS_OBJ) $(CORE_OBJS) -lcurl
 $(DYLIB): deps
-	$(CC) -dynamiclib $(DYFLAGS) $(LDFLAGS) -lcurl -o $@ $(OBJS) $(GENCODECS_OBJ) $(CORE_OBJS)
+	$(CC) -dynamiclib $(DYFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(GENCODECS_OBJ) $(CORE_OBJS) -lcurl
 
 deps:
 	@ $(MAKE) -C $(CORE_DIR)
