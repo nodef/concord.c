@@ -433,6 +433,176 @@ struct logmod *discord_get_logmod(struct discord *client);
  */
 struct io_poller *discord_get_io_poller(struct discord *client);
 
+/** @addtogroup DiscordDataWrap Data Wrap
+ * @brief Helpers for wrapping Discord data types for easier management
+ *  @{ */
+
+#define __CAT(_a, _b) _a##_b
+#define _CAT(_a, _b)  __CAT(_a, _b)
+#define _EXPECT_CONTAINER__struct
+#define _EXPECT_CONTAINER__union
+#define _DISCORD_SYMBOL_WITHOUT_CONTAINER(_symbol)                            \
+    _CAT(_EXPECT_CONTAINER__, _symbol)
+
+/**
+ * @brief The Discord data wrap structure
+ *
+ * This struct is used to wrap Discord data types for easier management
+ */
+#define discord_data_wrap reflectc_wrap
+
+/**
+ * @brief Wrap a Discord data type into a reflectc_wrap structure
+ *
+ * @param _symbol the Discord data type symbol (with struct or union)
+ * @param _client the client created with discord_from_token()
+ * @param _data the Discord data type to be wrapped
+ * @return the @ref discord_data_wrap Discord data type
+ */
+#define discord_data_wrap_from(_symbol, _client, _data)                       \
+    _CAT(reflectc_from_, _DISCORD_SYMBOL_WITHOUT_CONTAINER(_symbol))(         \
+        (struct reflectc *)_client, _data, NULL)
+
+/**
+ * @brief Cleanup a wrapped Discord data type
+ *
+ * @param _data the @ref discord_data_wrap Discord data type
+ */
+#define discord_data_wrap_cleanup(_data) reflectc_cleanup(NULL, _data)
+
+/**
+ * @brief Cleanup a Discord data type wrapped into a reflectc_wrap structure
+ *
+ * @param _client the client created with discord_from_token()
+ * @param _data the Discord data type to be cleaned up
+ */
+#define discord_data_cleanup(_client, _data)                                  \
+    discord_data_wrap_cleanup(reflectc_find((struct reflectc *)_client, _data))
+
+/** @addtogroup DiscordDataWrapJSON JSON Conversion
+ * @brief Helpers for converting Discord data types to/from JSON
+ *  @{ */
+
+/* forward declaration */
+struct jsmnf_pair;
+struct jsonb;
+
+/**
+ * @brief Transform a wrapped Discord data type into a JSON string
+ *
+ * @param member the wrapped Discord data type
+ * @param p_buf pointer to the JSON buffer
+ * @param p_bufsize pointer to the JSON buffer size
+ * @CCORD_return
+ */
+CCORDcode discord_data_wrap_to_json(const struct discord_data_wrap *member,
+                                    char *p_buf[],
+                                    size_t *p_bufsize);
+
+/**
+ * @brief Transform a Discord data type into a JSON string
+ *
+ * @param _symbol the Discord data type symbol (with struct or union)
+ * @param _client the client created with discord_from_token()
+ * @param _data the Discord data type to be transformed
+ * @param _p_buf pointer to the JSON buffer
+ * @param _p_bufsize pointer to the JSON buffer size
+ * @CCORD_return
+ */
+#define discord_data_to_json(_symbol, _client, _data, _p_buf, _p_bufsize)     \
+    discord_data_wrap_to_json(                                                \
+        discord_data_wrap_from(_symbol, _client, _data), _p_buf, _p_bufsize)
+
+/**
+ * @brief Transform a wrapped Discord data type into a jsonb handle
+ *
+ * @param jb the jsonb handle
+ * @param member the wrapped Discord data type
+ * @param p_buf pointer to the JSON buffer
+ * @param p_bufsize pointer to the JSON buffer size
+ * @CCORD_return
+ */
+CCORDcode discord_data_wrap_to_jsonb(struct jsonb *jb,
+                                     const struct discord_data_wrap *member,
+                                     char *p_buf[],
+                                     size_t *p_bufsize);
+
+/**
+ * @brief Transform a Discord data type into a jsonb handle
+ *
+ * @param _symbol the Discord data type symbol (with struct or union)
+ * @param _client the client created with discord_from_token()
+ * @param _jb the jsonb handle
+ * @param _data the Discord data type to be transformed
+ * @param _p_buf pointer to the JSON buffer
+ * @param _p_bufsize pointer to the JSON buffer size
+ * @CCORD_return
+ */
+#define discord_data_to_jsonb(_symbol, _client, _jb, _data, _p_buf,           \
+                              _p_bufsize)                                     \
+    discord_data_wrap_to_jsonb(                                               \
+        _jb, discord_data_wrap_from(_symbol, _client, _data), _p_buf,         \
+        _p_bufsize)
+
+/**
+ * @brief Parse a JSON string and fill a wrapped Discord data type
+ *
+ * @param json the JSON string
+ * @param len length of @ref json
+ * @param root the root wrapped Discord data type
+ * @CCORD_return
+ */
+CCORDcode discord_data_wrap_from_json(const char *json,
+                                      size_t len,
+                                      struct discord_data_wrap *root);
+
+/**
+ * @brief Parse a JSON string and fill a Discord data type
+ *
+ * @param _symbol the Discord data type symbol (with struct or union)
+ * @param _client the client created with discord_from_token()
+ * @param _json the JSON string
+ * @param _len length of @ref json
+ * @param _data the Discord data type to be filled
+ * @CCORD_return
+ */
+#define discord_data_from_json(_symbol, _client, _json, _len, _data)          \
+    discord_data_wrap_from_json(                                              \
+        _json, _len, discord_data_wrap_from(_symbol, _client, _data))
+
+/**
+ * @brief Parse a jsmnf_pair and fill a wrapped Discord data type
+ *
+ * @param p the jsmnf_pair
+ * @param json the JSON string
+ * @param length length of @ref json
+ * @param member the wrapped Discord data type
+ * @CCORD_return
+ */
+CCORDcode discord_data_wrap_from_jsmnf(const struct jsmnf_pair *p,
+                                       const char *json,
+                                       size_t length,
+                                       const struct discord_data_wrap *member);
+
+/**
+ * @brief Parse a jsmnf_pair and fill a Discord data type
+ *
+ * @param _client the client created with discord_from_token()
+ * @param _p the jsmnf_pair
+ * @param _json the JSON string
+ * @param _length length of @ref json
+ * @param _type the Discord data type symbol (without struct/union)
+ * @param _data the Discord data type to be filled
+ * @CCORD_return
+ */
+#define discord_data_from_jsmnf(_client, _p, _json, _length, _type, _data)    \
+    discord_data_wrap_from_jsmnf(                                             \
+        _p, _json, _length, discord_data_wrap_from(_type, _client, _data))
+
+/** @} DiscordDataWrapJSON */
+
+/** @} DiscordDataWrap */
+
 /** @addtogroup DiscordTimer Timer
  * @brief Schedule callbacks to be called in the future
  *  @{ */

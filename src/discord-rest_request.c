@@ -12,9 +12,10 @@ _discord_request_init(void)
 }
 
 static void
-_discord_request_cleanup(struct discord_request *req)
+_discord_request_cleanup(struct reflectc *registry,
+                         struct discord_request *req)
 {
-    discord_attachments_cleanup(&req->attachments);
+    reflectc_erase(registry, &req->attachments);
     if (req->body.start) free(req->body.start);
     if (req->reason) free(req->reason);
     if (req->json.start) free((char *)req->json.start);
@@ -107,6 +108,7 @@ discord_requestor_init(struct discord_requestor *rqtor, const char token[])
 void
 discord_requestor_cleanup(struct discord_requestor *rqtor)
 {
+    struct reflectc *registry = CLIENT(rqtor, rest.requestor)->registry;
     if (rqtor->queues) {
         QUEUE *const req_queues[] = { &rqtor->queues->recycling,
                                       &rqtor->queues->pending,
@@ -125,7 +127,7 @@ discord_requestor_cleanup(struct discord_requestor *rqtor)
                 QUEUE_REMOVE(qelem);
 
                 req = QUEUE_DATA(qelem, struct discord_request, entry);
-                _discord_request_cleanup(req);
+                _discord_request_cleanup(registry, req);
             }
         }
         free(rqtor->queues);
@@ -162,6 +164,7 @@ static void
 _discord_request_to_multipart(curl_mime *mime, void *p_req)
 {
     struct discord_request *req = p_req;
+    struct discord_attachments *attachments = &req->attachments;
     curl_mimepart *part;
     char name[64];
 
@@ -174,48 +177,47 @@ _discord_request_to_multipart(curl_mime *mime, void *p_req)
     }
 
     /* attachment part */
-    for (int i = 0; i < req->attachments.size; ++i) {
+    for (int i = 0; i < attachments->size; ++i) {
         if ((snprintf(name, sizeof(name), "files[%" PRIu64 "]",
-                      req->attachments.array[i].id))
+                      attachments->array[i].id))
             >= (int)sizeof(name))
         {
             logmod_log(ERROR, NULL, "Attachment's filename is too long: %s",
-                       req->attachments.array[i].filename);
+                       attachments->array[i].filename);
             continue;
         }
 
-        if (req->attachments.array[i].content) {
+        if (attachments->array[i].content) {
             part = curl_mime_addpart(mime);
-            curl_mime_data(part, req->attachments.array[i].content,
-                           req->attachments.array[i].size
-                               ? req->attachments.array[i].size
+            curl_mime_data(part, attachments->array[i].content,
+                           attachments->array[i].size
+                               ? attachments->array[i].size
                                : CURL_ZERO_TERMINATED);
-            curl_mime_filename(part, !req->attachments.array[i].filename
+            curl_mime_filename(part, !attachments->array[i].filename
                                          ? "a.out"
-                                         : req->attachments.array[i].filename);
-            curl_mime_type(part, !req->attachments.array[i].content_type
+                                         : attachments->array[i].filename);
+            curl_mime_type(part, !attachments->array[i].content_type
                                      ? "application/octet-stream"
-                                     : req->attachments.array[i].content_type);
+                                     : attachments->array[i].content_type);
             curl_mime_name(part, name);
         }
-        else if (req->attachments.array[i].filename) {
+        else if (attachments->array[i].filename) {
             CURLcode ecode;
 
             /* fetch local file by the filename */
             part = curl_mime_addpart(mime);
-            ecode =
-                curl_mime_filedata(part, req->attachments.array[i].filename);
+            ecode = curl_mime_filedata(part, attachments->array[i].filename);
             if (ecode != CURLE_OK) {
                 char errbuf[256];
                 snprintf(errbuf, sizeof(errbuf), "%s (file: %s)",
                          curl_easy_strerror(ecode),
-                         req->attachments.array[i].filename);
+                         attachments->array[i].filename);
                 perror(errbuf);
                 continue;
             }
-            curl_mime_type(part, !req->attachments.array[i].content_type
+            curl_mime_type(part, !attachments->array[i].content_type
                                      ? "application/octet-stream"
-                                     : req->attachments.array[i].content_type);
+                                     : attachments->array[i].content_type);
             curl_mime_name(part, name);
         }
     }
@@ -307,6 +309,7 @@ void
 discord_request_cancel(struct discord_requestor *rqtor,
                        struct discord_request *req)
 {
+    struct reflectc *registry = CLIENT(rqtor, rest.requestor)->registry;
     struct discord_refcounter *rc = &CLIENT(rqtor, rest.requestor)->refcounter;
 
     if (NOT_EMPTY_STR(req->reason)) {
@@ -336,7 +339,7 @@ discord_request_cancel(struct discord_requestor *rqtor,
     *req->key = '\0';
     req->conn = NULL;
     req->retry_attempt = 0;
-    discord_attachments_cleanup(&req->attachments);
+    reflectc_erase(registry, &req->attachments);
     memset(req, 0, sizeof(struct discord_attributes));
 
     QUEUE_REMOVE(&req->entry);
@@ -418,6 +421,14 @@ _discord_request_retry(struct discord_requestor *rqtor,
     return true;
 }
 
+static void
+_discord_response_data_cleanup(void *p_response_data)
+{
+    struct reflectc_wrap *w_response_data =
+        reflectc_find(NULL, p_response_data);
+    reflectc_cleanup(NULL, w_response_data);
+}
+
 CCORDcode
 discord_requestor_info_read(struct discord_requestor *rqtor)
 {
@@ -457,23 +468,24 @@ discord_requestor_info_read(struct discord_requestor *rqtor)
                 else if (req->dispatch.has_type
                          && req->dispatch.sync != DISCORD_SYNC_FLAG)
                 {
+                    struct discord *client = CLIENT(rqtor, rest.requestor);
                     if (req->dispatch.sync) {
                         req->response.data = req->dispatch.sync;
                     }
                     else {
                         req->response.data = calloc(1, req->response.size);
                         discord_refcounter_add_internal(
-                            &CLIENT(rqtor, rest.requestor)->refcounter,
-                            req->response.data, req->response.cleanup, true);
+                            &client->refcounter, req->response.data,
+                            &_discord_response_data_cleanup, true);
                     }
 
                     /* initialize ret */
-                    if (req->response.init)
-                        req->response.init(req->response.data);
-                    /* populate ret */
-                    if (req->response.from_json)
-                        req->response.from_json(body.start, body.size,
-                                                req->response.data);
+                    if (req->response.init) {
+                        struct reflectc_wrap *wrap = req->response.init(
+                            client->registry, req->response.data, NULL);
+                        discord_data_wrap_from_json(body.start, body.size,
+                                                    wrap);
+                    }
                 }
 
                 /** FIXME: bucket should be recycled if it was matched with an
@@ -633,8 +645,9 @@ _discord_request_attributes_copy(struct discord_request *dest,
         if (!dest->reason) dest->reason = calloc(DISCORD_MAX_REASON_LEN, 1);
         snprintf(dest->reason, DISCORD_MAX_REASON_LEN, "%s", src->reason);
     }
-    if (src->attachments.size)
+    if (src->attachments.size) {
         _discord_attachments_dup(&dest->attachments, &src->attachments);
+    }
 }
 
 static struct discord_request *

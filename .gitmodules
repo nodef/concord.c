@@ -5,4 +5,4 @@
 	path = reflect-c
 	url = https://github.com/lcsmuller/reflect-c.git
 	branch = master
-	ignore = all
+	ignore = dirty

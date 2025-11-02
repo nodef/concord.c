@@ -16,7 +16,8 @@
     do {                                                                      \
         unsigned __CHASH_HINDEX;                                              \
         for (__CHASH_HINDEX = 0; __CHASH_HINDEX < (key).size;                 \
-             ++__CHASH_HINDEX) {                                              \
+             ++__CHASH_HINDEX)                                                \
+        {                                                                     \
             (hash) = (((hash) << 1) + (hash)) + (key).start[__CHASH_HINDEX];  \
         }                                                                     \
     } while (0)
@@ -116,10 +117,10 @@ discord_message_commands_set_prefix(struct discord_message_commands *cmds,
 }
 
 static void
-_discord_message_cleanup_v(void *p_message)
+_discord_message_cleanup(void *p_message)
 {
-    discord_message_cleanup(p_message);
-    free(p_message);
+    struct reflectc_wrap *w_message = reflectc_find(NULL, p_message);
+    reflectc_cleanup(NULL, w_message);
 }
 
 /** return true in case user command has been triggered */
@@ -137,12 +138,14 @@ discord_message_commands_try_perform(struct discord_message_commands *cmds,
     {
         struct discord *client = CLIENT(cmds, commands);
         struct discord_message *event_data = calloc(1, sizeof *event_data);
+        struct reflectc_wrap *w_message =
+            reflectc_from_discord_message(client->registry, event_data, NULL);
         discord_ev_message callback = NULL;
         struct ccord_szbuf command;
         char *tmp;
 
-        discord_message_from_jsmnf(payload->data, payload->json.start,
-                                   event_data);
+        discord_data_wrap_from_jsmnf(f, payload->json.start,
+                                     payload->json.size, w_message);
 
         command.start = event_data->content + cmds->prefix.size;
         command.size = strcspn(command.start, " \n\t\r");
@@ -155,7 +158,8 @@ discord_message_commands_try_perform(struct discord_message_commands *cmds,
         {
             /* couldn't match command to callback, get fallback if available */
             if (!cmds->prefix.size || !cmds->fallback) {
-                _discord_message_cleanup_v(event_data);
+                _discord_message_cleanup(event_data);
+                free(event_data);
                 return false;
             }
             command.size = 0;
@@ -174,7 +178,7 @@ discord_message_commands_try_perform(struct discord_message_commands *cmds,
             == discord_refcounter_incr(&client->refcounter, event_data))
         {
             discord_refcounter_add_internal(&client->refcounter, event_data,
-                                            _discord_message_cleanup_v, false);
+                                            &_discord_message_cleanup, true);
         }
         callback(client, event_data);
         event_data->content = tmp; /* retrieve original ptr */

@@ -10,8 +10,6 @@
 !docs/*
 !doxygen-awesome-css
 !examples
-!gencodecs
-!reflect-c
 !include
 !include/*.h
 !lib
@@ -29,3 +27,11 @@
 !config.json
 !.github/**
 !concord.pc
+!reflect-c
+!src/api
+!src/api/*.recipe.h
+!generated
+!generated/discord_codecs.c
+!generated/discord_codecs.h
+!tools
+!tools/*
