@@ -6,7 +6,7 @@ INCLUDE_DIR   = $(TOP)/include
 GENERATED_DIR = $(TOP)/generated
 REFLECTC_DIR  = $(TOP)/reflect-c
 
-TEST_DISCORD = racecond rest timeout
+TEST_DISCORD = racecond rest timeout discord-data-wrap
 TEST_CORE    = websockets queriec
 
 TESTS = $(TEST_DISCORD) $(TEST_GITHUB) $(TEST_CORE)

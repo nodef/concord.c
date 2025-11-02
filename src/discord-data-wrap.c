@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 
 #include "discord.h"
@@ -41,8 +42,13 @@ discord_data_wrap_to_jsonb(struct jsonb *jb,
                            size_t *p_bufsize)
 {
     const void *value = reflectc_get(member);
-    if (_is_optional(member) && _is_zero(value, member->tmpl->size)) {
-        return JSONB_OK;
+    if (_is_optional(member)) {
+        unsigned depth = reflectc_get_pointer_depth(member);
+        if ((depth >= 2 && reflectc_is_null(member))
+            || (depth < 2 && _is_zero(value, member->tmpl->size)))
+        {
+            return JSONB_OK;
+        }
     }
     if (reflectc_is_null(member)) {
         jsonbcode code = jsonb_null_auto(jb, p_buf, p_bufsize);
@@ -112,6 +118,37 @@ discord_data_wrap_to_jsonb(struct jsonb *jb,
             }
             for (size_t i = 0; i < member->members.length; ++i) {
                 const struct discord_data_wrap *f = &member->members.array[i];
+
+                if (_is_optional(f)) {
+                    unsigned depth = reflectc_get_pointer_depth(f);
+                    if (depth >= 2) {
+                        void **slot = (void **)f->ptr_value;
+                        fprintf(stderr,
+                                "optional pointer %.*s slot=%p value=%p\n",
+                                (int)f->tmpl->name.length, f->tmpl->name.buf,
+                                (void *)slot, slot ? *slot : NULL);
+                        if (reflectc_is_null(f)) {
+                            fprintf(stderr,
+                                    "skipping optional member %.*s "
+                                    "(resolved=%p depth=%u)\n",
+                                    (int)f->tmpl->name.length,
+                                    f->tmpl->name.buf, reflectc_resolve(f),
+                                    depth);
+                            continue;
+                        }
+                    }
+                    else {
+                        const void *field_value = reflectc_get(f);
+                        if (_is_zero(field_value, f->tmpl->size)) {
+                            fprintf(stderr,
+                                    "skipping optional member %.*s (scalar "
+                                    "zero)\n",
+                                    (int)f->tmpl->name.length,
+                                    f->tmpl->name.buf);
+                            continue;
+                        }
+                    }
+                }
 
                 if ((code = jsonb_key_auto(jb, p_buf, p_bufsize,
                                            f->tmpl->name.buf,
