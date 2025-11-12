@@ -1,0 +1,17 @@
+.github/
+.vscode/
+core/
+docs/
+doxygen-awesome-css/
+examples/
+gencodecs/
+lib/
+licenses/
+scripts/
+templates/
+test/
+.clang-format
+.gitattributes
+.gitmodules
+config.json
+Doxyfile

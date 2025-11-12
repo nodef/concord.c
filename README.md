@@ -20,7 +20,26 @@ Development has been happening in the dev branch. We are working on new features
 
 ## About
 
-Concord is an asynchronous C99 Discord API library with minimal external dependencies, and a low-level translation of the Discord official documentation to C code.
+Concord is an asynchronous C99 Discord API library with minimal external dependencies, and a low-level translation of the Discord official documentation to C code - by [Lucas Müller](https://github.com/lcsmuller).
+
+### Installation
+
+Run:
+```bash
+$ npm i concord.c
+```
+
+And then include `discord.h`, and related header files as follows:
+```c
+#include "node_modules/concord.c/include/discord.h"
+#include "node_modules/concord.c/include/log.h"
+```
+
+You will also need to link against `libdiscord.a` and `libcurl.a`:
+```bash
+$ cd node_modules/concord.c && make && cd ../..
+$ gcc main.c -L node_modules/concord.c/lib -ldiscord -lcurl -pthread
+```
 
 ### Examples
 
@@ -414,3 +433,10 @@ All kinds of contributions are welcome, all we ask is to abide to our [guideline
 
 - [Migrating from V1][migrating-link]
 - [Migrating from Orca][migrating-orca-link]
+
+<br>
+<br>
+
+
+[![ORG](https://img.shields.io/badge/org-nodef-green?logo=Org)](https://nodef.github.io)
+![](https://ga-beacon.deno.dev/G-RC63DPBH3P:SH3Eq-NoQ9mwgYeHWxu7cw/github.com/nodef/concord.c)

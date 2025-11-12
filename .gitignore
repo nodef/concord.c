@@ -29,3 +29,5 @@
 !Makefile
 !config.json
 !.github/**
+!.npmignore
+!package.json
