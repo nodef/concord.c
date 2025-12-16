@@ -1,0 +1,22 @@
+{
+  "name": "concord.c",
+  "version": "2.4.0",
+  "description": "A Discord API wrapper library made in C; Cogmasters (2020).",
+  "keywords": [
+    "c",
+    "library",
+    "discord",
+    "api",
+    "wrapper"
+  ],
+  "homepage": "https://github.com/nodef/concord.c#readme",
+  "bugs": {
+    "url": "https://github.com/nodef/concord.c/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nodef/concord.c.git"
+  },
+  "license": "MIT",
+  "main": "concord.h"
+}
